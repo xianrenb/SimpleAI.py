@@ -53,16 +53,17 @@ class SimpleAI(object):
         return result
 
     def predict_sample(self, sample):
+        eps = np.float32(1e-7)
         k = self.k
         scores = []
         for i in xrange(self.class_n):
             class_scores = []
             for j in xrange(self.groupsize):
                 x = np.random.random_integers(self.modelsize) - 1
-                pseudomax, biasdistance = self.model[i][x]
+                pseudomax, matchdistance, biasdistance = self.model[i][x]
                 diff = sample - pseudomax
                 distance = sum(diff * diff)**np.float32(0.5)
-                score = biasdistance - distance
+                score = (biasdistance - distance) / (matchdistance + eps)
                 class_scores.append(score)
             class_scores = np.array(class_scores)
             # find the largest k elements' indices
@@ -112,7 +113,7 @@ class SimpleAI(object):
                 matchdistance = s1 / (s2 + eps)
                 unmatchdistance = s3 / (s4 + eps)
                 biasdistance = (matchdistance + unmatchdistance) / np.float32(2.0)
-                data = (pseudomax, biasdistance)
+                data = (pseudomax, matchdistance, biasdistance)
                 self.model[i].append(data)
         # clear data to save memory
         self.samples = None
